@@ -17,6 +17,8 @@ mod task;
 use crate::config::MAX_APP_NUM;
 use crate::loader::{get_num_app, init_app_cx};
 use crate::sync::UPSafeCell;
+use crate::config::MAX_SYSCALL_NUM;
+use crate::timer::get_time_ms;
 use lazy_static::*;
 use switch::__switch;
 pub use task::{TaskControlBlock, TaskStatus};
@@ -54,9 +56,12 @@ lazy_static! {
         let mut tasks = [TaskControlBlock {
             task_cx: TaskContext::zero_init(),
             task_status: TaskStatus::UnInit,
+            sys_cnt: [0; MAX_SYSCALL_NUM],
+            start_time: 0,
         }; MAX_APP_NUM];
         for (i, task) in tasks.iter_mut().enumerate() {
             task.task_cx = TaskContext::goto_restore(init_app_cx(i));
+            task.start_time = get_time_ms();
             task.task_status = TaskStatus::Ready;
         }
         TaskManager {
@@ -135,6 +140,27 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+
+    /// Count for syscall
+    fn syscall_count(&self, syscall_id: usize) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].sys_cnt[syscall_id] += 1;
+    }
+
+    /// Get status and time of a task
+    fn task_get_status_and_time(&self) -> (TaskStatus, usize) {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        (inner.tasks[current].task_status, inner.tasks[current].start_time)
+    }
+
+    /// Get syscall count of a task
+    fn task_get_syscall_cnt(&self) -> [u32; MAX_SYSCALL_NUM] {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].sys_cnt.clone()
+    }
 }
 
 /// Run the first task in task list.
@@ -168,4 +194,19 @@ pub fn suspend_current_and_run_next() {
 pub fn exit_current_and_run_next() {
     mark_current_exited();
     run_next_task();
+}
+
+/// Change the count of a syscall
+pub fn syscall_count(syscall_id: usize) {
+    TASK_MANAGER.syscall_count(syscall_id);
+}
+
+/// Get status and time of a task
+pub fn task_get_status_and_time() -> (TaskStatus, usize) {
+    TASK_MANAGER.task_get_status_and_time()
+}
+
+/// Get syscall count of a task
+pub fn task_get_syscall_cnt() -> [u32; MAX_SYSCALL_NUM] {
+    TASK_MANAGER.task_get_syscall_cnt()
 }
