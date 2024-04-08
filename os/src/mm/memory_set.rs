@@ -286,6 +286,13 @@ impl MemorySet {
         }
     }
 
+    /// Just unmap
+    pub fn just_unmap(&mut self, start: VirtAddr, end: VirtAddr) {
+        for vpn in VPNRange::new(start.into(), end.into()) {
+            self.page_table.unmap(vpn);
+        }
+    }
+
     /// append the area to new_end
     #[allow(unused)]
     pub fn append_to(&mut self, start: VirtAddr, new_end: VirtAddr) -> bool {

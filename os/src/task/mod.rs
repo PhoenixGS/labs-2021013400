@@ -154,3 +154,10 @@ pub fn task_mmap(start: VirtAddr, end: VirtAddr, port: usize) {
     let permission = MapPermission::from_bits_truncate((port << 1) as u8) | MapPermission::U; // UXWR0
     inner.memory_set.insert_framed_area(start, end, permission);
 }
+
+/// Unmap
+fn task_munmap(start: VirtAddr, end: VirtAddr) {
+    let task = current_task().unwrap();
+    let mut inner = task.inner_exclusive_access();
+    inner.memory_set.just_unmap(start, end);
+}
