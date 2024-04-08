@@ -7,7 +7,7 @@ use crate::{
     config::{MAX_SYSCALL_NUM, PAGE_SIZE},
     mm::{translated_refmut, translated_str, translated_byte_buffer, VPNRange, VirtAddr},
     task::{
-        add_task, current_task, current_user_token, exit_current_and_run_next, suspend_current_and_run_next, task_get_entry, task_get_status_and_time, task_get_syscall_cnt, task_mmap, TaskStatus
+        add_task, current_task, current_user_token, exit_current_and_run_next, suspend_current_and_run_next, task_get_entry, task_get_status_and_time, task_get_syscall_cnt, task_mmap, task_munmap, TaskStatus
     },
     timer::{get_time_ms, get_time_us},
 };
@@ -203,7 +203,22 @@ pub fn sys_munmap(_start: usize, _len: usize) -> isize {
         "kernel:pid[{}] sys_munmap NOT IMPLEMENTED",
         current_task().unwrap().pid.0
     );
-    -1
+
+    // check
+    if _start % PAGE_SIZE != 0 {
+        return -1;
+    }
+
+    for vpn in VPNRange::new(VirtAddr::from(_start).floor(), VirtAddr::from(_start + _len).ceil()) {
+        let pte = task_get_entry(vpn);
+        if ! pte.is_some() || ! pte.unwrap().is_valid() {
+            return -1;
+        }
+    }
+    
+    task_munmap(VirtAddr::from(_start).floor().into(), VirtAddr::from(_start + _len).ceil().into());
+    
+    0
 }
 
 /// change data segment size
