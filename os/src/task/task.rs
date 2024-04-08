@@ -1,11 +1,12 @@
 //! Types related to task management & Functions for completely changing TCB
 use super::TaskContext;
 use super::{kstack_alloc, pid_alloc, KernelStack, PidHandle};
-use crate::config::TRAP_CONTEXT_BASE;
 use crate::fs::{File, Stdin, Stdout};
+use crate::config::{TRAP_CONTEXT_BASE, MAX_SYSCALL_NUM};
 use crate::mm::{MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE};
 use crate::sync::UPSafeCell;
 use crate::trap::{trap_handler, TrapContext};
+use crate::timer::get_time_ms;
 use alloc::sync::{Arc, Weak};
 use alloc::vec;
 use alloc::vec::Vec;
@@ -71,6 +72,12 @@ pub struct TaskControlBlockInner {
 
     /// Program break
     pub program_brk: usize,
+
+    /// The syscall count
+    pub sys_cnt: [u32; MAX_SYSCALL_NUM],
+
+    /// The start time of a task
+    pub start_time: usize,
 }
 
 impl TaskControlBlockInner {
@@ -93,6 +100,9 @@ impl TaskControlBlockInner {
             self.fd_table.push(None);
             self.fd_table.len() - 1
         }
+    }
+    pub fn get_status_and_time(&self) -> (TaskStatus, usize) {
+        (self.get_status(), self.start_time)
     }
 }
 
@@ -135,6 +145,8 @@ impl TaskControlBlock {
                     ],
                     heap_bottom: user_sp,
                     program_brk: user_sp,
+                    sys_cnt: [0; MAX_SYSCALL_NUM],
+                    start_time: get_time_ms(),
                 })
             },
         };
@@ -216,6 +228,10 @@ impl TaskControlBlock {
                     fd_table: new_fd_table,
                     heap_bottom: parent_inner.heap_bottom,
                     program_brk: parent_inner.program_brk,
+                    sys_cnt: [0; MAX_SYSCALL_NUM],
+                    start_time: get_time_ms(),
+                    // sys_cnt: parent_inner.sys_cnt.clone(),
+                    // start_time: parent_inner.start_time,
                 })
             },
         });
