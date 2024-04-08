@@ -27,6 +27,8 @@ use lazy_static::*;
 pub use manager::{fetch_task, TaskManager};
 use switch::__switch;
 pub use task::{TaskControlBlock, TaskStatus};
+use crate::config::MAX_SYSCALL_NUM;
+
 
 pub use context::TaskContext;
 pub use id::{kstack_alloc, pid_alloc, KernelStack, PidHandle};
@@ -114,4 +116,25 @@ lazy_static! {
 ///Add init process to the manager
 pub fn add_initproc() {
     add_task(INITPROC.clone());
+}
+
+/// Count for syscall
+pub fn syscall_count(syscall_id: usize) {
+    let task = current_task().unwrap();
+    let mut inner = task.inner_exclusive_access();
+    inner.sys_cnt[syscall_id] += 1;
+}
+
+/// Get status and time of a task
+pub fn task_get_status_and_time() -> (TaskStatus, usize) {
+    let task = current_task().unwrap();
+    let inner = task.inner_exclusive_access();
+    inner.get_status_and_time()
+}
+
+/// Get syscall count of a task
+pub fn task_get_syscall_cnt() -> [u32; MAX_SYSCALL_NUM] {
+    let task = current_task().unwrap();
+    let inner = task.inner_exclusive_access();
+    inner.sys_cnt.clone()
 }
