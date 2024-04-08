@@ -21,6 +21,8 @@ use alloc::vec::Vec;
 use lazy_static::*;
 use switch::__switch;
 pub use task::{TaskControlBlock, TaskStatus};
+use crate::config::MAX_SYSCALL_NUM;
+
 
 pub use context::TaskContext;
 
@@ -153,6 +155,27 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+
+    /// Count for syscall
+    fn syscall_count(&self, syscall_id: usize) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].sys_cnt[syscall_id] += 1;
+    }
+
+    /// Get status and time of a task
+    fn task_get_status_and_time(&self) -> (TaskStatus, usize) {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        (inner.tasks[current].task_status, inner.tasks[current].start_time)
+    }
+
+    /// Get syscall count of a task
+    fn task_get_syscall_cnt(&self) -> [u32; MAX_SYSCALL_NUM] {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].sys_cnt.clone()
+    }
 }
 
 /// Run the first task in task list.
@@ -201,4 +224,19 @@ pub fn current_trap_cx() -> &'static mut TrapContext {
 /// Change the current 'Running' task's program break
 pub fn change_program_brk(size: i32) -> Option<usize> {
     TASK_MANAGER.change_current_program_brk(size)
+}
+
+/// Change the count of a syscall
+pub fn syscall_count(syscall_id: usize) {
+    TASK_MANAGER.syscall_count(syscall_id);
+}
+
+/// Get status and time of a task
+pub fn task_get_status_and_time() -> (TaskStatus, usize) {
+    TASK_MANAGER.task_get_status_and_time()
+}
+
+/// Get syscall count of a task
+pub fn task_get_syscall_cnt() -> [u32; MAX_SYSCALL_NUM] {
+    TASK_MANAGER.task_get_syscall_cnt()
 }
