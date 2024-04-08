@@ -30,6 +30,7 @@ pub use manager::{fetch_task, TaskManager};
 use switch::__switch;
 pub use task::{TaskControlBlock, TaskStatus};
 use crate::config::MAX_SYSCALL_NUM;
+use crate::mm::{MapPermission, PageTableEntry, VirtPageNum, VirtAddr};
 
 
 pub use id::{kstack_alloc, pid_alloc, KernelStack, PidHandle};
