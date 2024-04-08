@@ -22,6 +22,7 @@ use lazy_static::*;
 use switch::__switch;
 pub use task::{TaskControlBlock, TaskStatus};
 use crate::config::MAX_SYSCALL_NUM;
+use crate::mm::{MapPermission, PageTableEntry, VirtPageNum, VirtAddr};
 
 
 pub use context::TaskContext;
@@ -176,6 +177,21 @@ impl TaskManager {
         let current = inner.current_task;
         inner.tasks[current].sys_cnt.clone()
     }
+
+    /// Get page table entry of a task
+    fn task_get_entry(&self, vpn: VirtPageNum) -> Option<PageTableEntry> {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].memory_set.translate(vpn)
+    }
+
+    /// Map
+    fn task_mmap(&self, start: VirtAddr, end: VirtAddr, port: usize) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        let permission = MapPermission::from_bits_truncate((port << 1) as u8) | MapPermission::U; // UXWR0
+        inner.tasks[current].memory_set.insert_framed_area(start, end, permission);
+    }
 }
 
 /// Run the first task in task list.
@@ -239,4 +255,14 @@ pub fn task_get_status_and_time() -> (TaskStatus, usize) {
 /// Get syscall count of a task
 pub fn task_get_syscall_cnt() -> [u32; MAX_SYSCALL_NUM] {
     TASK_MANAGER.task_get_syscall_cnt()
+}
+
+/// Get page table entry of a task
+pub fn task_get_entry(vpn: VirtPageNum) -> Option<PageTableEntry> {
+    TASK_MANAGER.task_get_entry(vpn)
+}
+
+/// Map
+pub fn task_mmap(start: VirtAddr, end: VirtAddr, port: usize) {
+    TASK_MANAGER.task_mmap(start, end, port);
 }

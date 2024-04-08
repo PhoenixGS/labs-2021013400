@@ -1,10 +1,13 @@
 //! Process management syscalls
 use crate::{
-    config::MAX_SYSCALL_NUM, mm::translated_byte_buffer,
-    task::{
-        change_program_brk, current_user_token, exit_current_and_run_next, suspend_current_and_run_next, task_get_status_and_time, task_get_syscall_cnt, TaskStatus
+    config::{MAX_SYSCALL_NUM, PAGE_SIZE},
+    mm::{
+        translated_byte_buffer, VPNRange, VirtAddr
     },
-    timer::{get_time_us, get_time_ms},
+    task::{
+        change_program_brk, current_user_token, exit_current_and_run_next, suspend_current_and_run_next, task_get_entry, task_get_status_and_time, task_get_syscall_cnt, task_mmap, TaskStatus
+    },
+    timer::{get_time_ms, get_time_us},
 };
 
 #[repr(C)]
@@ -93,8 +96,24 @@ pub fn sys_task_info(_ti: *mut TaskInfo) -> isize {
 
 // YOUR JOB: Implement mmap.
 pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
-    trace!("kernel: sys_mmap NOT IMPLEMENTED YET!");
-    -1
+    trace!("kernel: sys_mmap");
+    
+    // check
+    if _start % PAGE_SIZE != 0 || _port & !0x7 != 0 || _port & 0x7 == 0 {
+        return -1;
+    }
+
+    
+    for vpn in VPNRange::new(VirtAddr::from(_start).floor(), VirtAddr::from(_start + _len).ceil()) {
+        let pte = task_get_entry(vpn);
+        if pte.is_some() && pte.unwrap().is_valid() {
+            return -1;
+        }
+    }
+
+    task_mmap(VirtAddr::from(_start).floor().into(), VirtAddr::from(_start + _len).ceil().into(), _port);
+
+    0
 }
 
 // YOUR JOB: Implement munmap.
