@@ -192,6 +192,13 @@ impl TaskManager {
         let permission = MapPermission::from_bits_truncate((port << 1) as u8) | MapPermission::U; // UXWR0
         inner.tasks[current].memory_set.insert_framed_area(start, end, permission);
     }
+
+    /// Unmap
+    fn task_munmap(&self, start: VirtAddr, end: VirtAddr) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].memory_set.just_unmap(start, end);
+    }
 }
 
 /// Run the first task in task list.
@@ -265,4 +272,9 @@ pub fn task_get_entry(vpn: VirtPageNum) -> Option<PageTableEntry> {
 /// Map
 pub fn task_mmap(start: VirtAddr, end: VirtAddr, port: usize) {
     TASK_MANAGER.task_mmap(start, end, port);
+}
+
+/// Unmap
+pub fn task_munmap(start: VirtAddr, end: VirtAddr) {
+    TASK_MANAGER.task_munmap(start, end);
 }

@@ -5,7 +5,7 @@ use crate::{
         translated_byte_buffer, VPNRange, VirtAddr
     },
     task::{
-        change_program_brk, current_user_token, exit_current_and_run_next, suspend_current_and_run_next, task_get_entry, task_get_status_and_time, task_get_syscall_cnt, task_mmap, TaskStatus
+        change_program_brk, current_user_token, exit_current_and_run_next, suspend_current_and_run_next, task_get_entry, task_get_status_and_time, task_get_syscall_cnt, task_mmap, task_munmap, TaskStatus
     },
     timer::{get_time_ms, get_time_us},
 };
@@ -103,7 +103,6 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
         return -1;
     }
 
-    
     for vpn in VPNRange::new(VirtAddr::from(_start).floor(), VirtAddr::from(_start + _len).ceil()) {
         let pte = task_get_entry(vpn);
         if pte.is_some() && pte.unwrap().is_valid() {
@@ -118,8 +117,23 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
 
 // YOUR JOB: Implement munmap.
 pub fn sys_munmap(_start: usize, _len: usize) -> isize {
-    trace!("kernel: sys_munmap NOT IMPLEMENTED YET!");
-    -1
+    trace!("kernel: sys_munmap");
+
+    // check
+    if _start % PAGE_SIZE != 0 {
+        return -1;
+    }
+
+    for vpn in VPNRange::new(VirtAddr::from(_start).floor(), VirtAddr::from(_start + _len).ceil()) {
+        let pte = task_get_entry(vpn);
+        if ! pte.is_some() || ! pte.unwrap().is_valid() {
+            return -1;
+        }
+    }
+    
+    task_munmap(VirtAddr::from(_start).floor().into(), VirtAddr::from(_start + _len).ceil().into());
+    
+    0
 }
 /// change data segment size
 pub fn sys_sbrk(size: i32) -> isize {
