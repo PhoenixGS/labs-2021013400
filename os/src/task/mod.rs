@@ -161,7 +161,7 @@ pub fn task_mmap(start: VirtAddr, end: VirtAddr, port: usize) {
 }
 
 /// Unmap
-fn task_munmap(start: VirtAddr, end: VirtAddr) {
+pub fn task_munmap(start: VirtAddr, end: VirtAddr) {
     let task = current_task().unwrap();
     let mut inner = task.inner_exclusive_access();
     inner.memory_set.just_unmap(start, end);
