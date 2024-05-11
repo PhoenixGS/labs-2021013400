@@ -4,11 +4,9 @@ use alloc::sync::Arc;
 use crate::{
     config::{MAX_SYSCALL_NUM, PAGE_SIZE},
     loader::get_app_data_by_name,
-    mm::{translated_refmut, translated_str, translated_byte_buffer, VPNRange, VirtAddr},
+    mm::{translated_byte_buffer, translated_refmut, translated_str, VPNRange, VirtAddr},
     task::{
-        add_task, current_task, current_user_token, exit_current_and_run_next,
-        suspend_current_and_run_next, TaskStatus,
-        task_get_status_and_time, task_get_syscall_cnt,
+        add_task, current_task, current_user_token, exit_current_and_run_next, suspend_current_and_run_next, task_get_entry, task_get_status_and_time, task_get_syscall_cnt, task_mmap, TaskStatus
     },
     timer::{get_time_ms, get_time_us},
 };
