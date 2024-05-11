@@ -120,7 +120,10 @@ pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
 /// HINT: You might reimplement it with virtual memory management.
 /// HINT: What if [`TimeVal`] is splitted by two pages ?
 pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
-    trace!("kernel: sys_get_time");
+    trace!(
+        "kernel:pid[{}] sys_get_time",
+        current_task().unwrap().pid.0
+    );
     let us = get_time_us();
 
     let buffers = translated_byte_buffer(current_user_token(), _ts as *mut u8, core::mem::size_of::<TimeVal>());
@@ -145,8 +148,10 @@ pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
 /// HINT: You might reimplement it with virtual memory management.
 /// HINT: What if [`TaskInfo`] is splitted by two pages ?
 pub fn sys_task_info(_ti: *mut TaskInfo) -> isize {
-    trace!("kernel: sys_task_info");
-
+    trace!(
+        "kernel:pid[{}] sys_task_info",
+        current_task().unwrap().pid.0
+    );
     let (status, start_time) = task_get_status_and_time();
     let syscall_cnt = task_get_syscall_cnt();
 
