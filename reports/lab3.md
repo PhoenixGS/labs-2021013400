@@ -2,7 +2,7 @@
 
 ## 功能实现
 
-本实验首先完成了一个系统调用 `sys_spawn`
+本实验首先完成了一个系统调用 `sys_spawn` 。该系统调用首先获取指定文件名的代码段，然后使用fork一个新的进程，并使用exec将代码段替换到新进程的内存空间中，最后将新进程加入到 `ready_queue` 中。
 
 除此之外，实验还完成了stride调度算法。在TCB中添加了两个信息，分别是进程的优先级priority和已运行的长度stride。
 
@@ -33,7 +33,11 @@ struct Stride(u64);
 
 impl PartialOrd for Stride {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        // ...
+        if abs(self.0 - other.0) <= BigStride / 2 {
+            Some(self.0.cmp(&other.0))
+        } else {
+            Some(other.0.cmp(&self.0))
+        }
     }
 }
 
