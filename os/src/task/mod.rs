@@ -161,3 +161,10 @@ pub fn task_munmap(start: VirtAddr, end: VirtAddr) {
     let mut inner = task.inner_exclusive_access();
     inner.memory_set.just_unmap(start, end);
 }
+
+/// Set priority
+pub fn task_set_priority(prio: usize) {
+    let task = current_task().unwrap();
+    let mut inner = task.inner_exclusive_access();
+    inner.priority = prio;
+}

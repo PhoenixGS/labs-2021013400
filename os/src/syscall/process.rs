@@ -6,7 +6,7 @@ use crate::{
     loader::get_app_data_by_name,
     mm::{translated_byte_buffer, translated_refmut, translated_str, VPNRange, VirtAddr},
     task::{
-        add_task, current_task, current_user_token, exit_current_and_run_next, suspend_current_and_run_next, task_get_entry, task_get_status_and_time, task_get_syscall_cnt, task_mmap, task_munmap, TaskStatus
+        add_task, current_task, current_user_token, exit_current_and_run_next, suspend_current_and_run_next, task_get_entry, task_get_status_and_time, task_get_syscall_cnt, task_mmap, task_munmap, task_set_priority, TaskStatus
     },
     timer::{get_time_ms, get_time_us},
 };
@@ -267,8 +267,14 @@ pub fn sys_spawn(_path: *const u8) -> isize {
 // YOUR JOB: Set task priority.
 pub fn sys_set_priority(_prio: isize) -> isize {
     trace!(
-        "kernel:pid[{}] sys_set_priority NOT IMPLEMENTED",
+        "kernel:pid[{}] sys_set_priority",
         current_task().unwrap().pid.0
     );
-    -1
+
+    if _prio < 2 {
+        return -1;
+    }
+    
+    task_set_priority(_prio as usize);
+    _prio
 }
