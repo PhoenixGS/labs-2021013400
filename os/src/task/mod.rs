@@ -144,3 +144,18 @@ pub fn task_get_syscall_cnt() -> [u32; MAX_SYSCALL_NUM] {
     let inner = task.inner_exclusive_access();
     inner.sys_cnt.clone()
 }
+
+/// Get page table entry of a task
+pub fn task_get_entry(vpn: VirtPageNum) -> Option<PageTableEntry> {
+    let task = current_task().unwrap();
+    let inner = task.inner_exclusive_access();
+    inner.memory_set.translate(vpn)
+}
+
+/// Map
+pub fn task_mmap(start: VirtAddr, end: VirtAddr, port: usize) {
+    let task = current_task().unwrap();
+    let mut inner = task.inner_exclusive_access();
+    let permission = MapPermission::from_bits_truncate((port << 1) as u8) | MapPermission::U; // UXWR0
+    inner.memory_set.insert_framed_area(start, end, permission);
+}
