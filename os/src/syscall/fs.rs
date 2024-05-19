@@ -89,7 +89,8 @@ pub fn sys_fstat(fd: usize, st: *mut Stat) -> isize {
     if inner.fd_table[fd].is_none() {
         return -1;
     }
-    let inode = inner.fd_table[fd].as_ref().unwrap();
+    let inode = inner.fd_table[fd].as_ref().unwrap().clone();
+    drop(inner);
     let stat = inode.stat();
     let token = current_user_token();
     let mut ptr = &stat as *const Stat as *const u8;
