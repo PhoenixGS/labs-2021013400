@@ -160,4 +160,15 @@ impl File for OSInode {
         }
         total_write_size
     }
+    fn stat(&self) -> super::Stat {
+        let inner = self.inner.exclusive_access();
+        let inode = inner.inode.clone();
+        super::Stat {
+            dev: 0,
+            ino: inode.get_block_id() as u64,
+            mode: super::StatMode::FILE,
+            nlink: 1,
+            pad: [0; 7],
+        }
+    }
 }

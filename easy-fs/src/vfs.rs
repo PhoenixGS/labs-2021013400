@@ -183,7 +183,11 @@ impl Inode {
         });
         block_cache_sync_all();
     }
-    /// link
+    /// Get the block id of current inode
+    pub fn get_block_id(&self) -> usize {
+        self.block_id
+    }
+    /// Link
     pub fn link(&self, old_name: &str, new_name: &str) -> bool {
         let mut fs = self.fs.lock();
         let op = |disk_inode: &DiskInode| {
