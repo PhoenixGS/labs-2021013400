@@ -187,6 +187,10 @@ impl Inode {
     pub fn get_block_id(&self) -> usize {
         self.block_id
     }
+    /// Get the block offset of current inode
+    pub fn get_block_offset(&self) -> usize {
+        self.block_offset
+    }
     /// Link
     pub fn link(&self, old_name: &str, new_name: &str) -> bool {
         let mut fs = self.fs.lock();
@@ -212,5 +216,53 @@ impl Inode {
         };
         self.modify_disk_inode(op);
         true
+    }
+    /// Unlink
+    pub fn unlink(&self, name: &str) -> bool {
+        // let mut fs = self.fs.lock();
+        // let op = |disk_inode: &DiskInode| {
+        //     assert!(disk_inode.is_dir());
+        //     self.find_inode_id(name, disk_inode) 
+        // };
+        // let inode_id = self.read_disk_inode(op);
+        // if inode_id.is_none() {
+        //     return false;
+        // }
+        // let inode_id = inode_id.unwrap();
+        let op = |disk_inode: &mut DiskInode| {
+            let mut dirent = DirEntry::empty();
+            let file_count = (disk_inode.size as usize) / DIRENT_SZ;
+            for i in 0..file_count {
+                disk_inode.read_at(i * DIRENT_SZ, dirent.as_bytes_mut(), &self.block_device);
+                if dirent.name() == name {
+                    disk_inode.write_at(
+                        i * DIRENT_SZ,
+                        DirEntry::empty().as_bytes(),
+                        &self.block_device,
+                    );
+                    break;
+                }
+            }
+        };
+        self.modify_disk_inode(op);
+        true
+    }
+    /// Get nlink
+    pub fn get_nlink(&self, block_id: usize, block_offset: usize) -> u32 {
+        let fs = self.fs.lock();
+        let inode_id = fs.get_inode_id(block_id as u32, block_offset);
+        let op = |disk_inode: &DiskInode| {
+            let mut dirent = DirEntry::empty();
+            let file_count = (disk_inode.size as usize) / DIRENT_SZ;
+            let mut nlink = 0;
+            for i in 0..file_count {
+                disk_inode.read_at(i * DIRENT_SZ, dirent.as_bytes_mut(), &self.block_device); 
+                if dirent.inode_id() == inode_id {
+                    nlink += 1;
+                }
+            }
+            nlink
+        };
+        self.read_disk_inode(op)
     }
 }

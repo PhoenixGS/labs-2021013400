@@ -129,6 +129,11 @@ pub fn link_file(old_name: &str, new_name: &str) -> bool {
     ROOT_INODE.link(old_name, new_name)
 }
 
+/// unlink file
+pub fn unlink_file(name: &str) -> bool {
+    ROOT_INODE.unlink(name)
+}
+
 impl File for OSInode {
     fn readable(&self) -> bool {
         self.readable
@@ -167,7 +172,7 @@ impl File for OSInode {
             dev: 0,
             ino: inode.get_block_id() as u64,
             mode: super::StatMode::FILE,
-            nlink: 1,
+            nlink: ROOT_INODE.get_nlink(inode.get_block_id(), inode.get_block_offset()),
             pad: [0; 7],
         }
     }
