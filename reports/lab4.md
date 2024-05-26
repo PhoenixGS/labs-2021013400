@@ -6,9 +6,9 @@
 
 其中， `sys_fstat` 系统调用要求获取文件的状态。因此当调用时，系统根据当前任务以及文件描述符获取 `OSInode` 。在 trait `File` 中添加了方法 `stat` 用来获取对应的文件状态。因此从 `fd_table` 中获取到查询的 `OSInode` 后直接调用它的 `stat` 方法。该方法会获取当前inode的一些基本信息，并从 `ROOT_INODE` 中查询的到 `nlink` 的数量。
 
-`sys_linkat` 系统调用要求创建一个文件的硬链接。在获取到 `old_name, new_name` 后，会调用 `fs` 中定义的 `link_file` ，以在 `ROOT_INODE` 中进行 `link` 的操作。 `link` 操作类似于 `Inode` 中的其他操作，运用 `modify_disk_inode` 等函数来对 `DiskInode` 进行访问。首先使用 `old_name` 来查找对应的 `inode_id` ，然后在块后新增一段记录 `new_name` 指向 `inode_id` 的部分。
+`sys_linkat` 系统调用要求创建一个文件的硬链接。在获取到 `old_name, new_name` 后，会调用 `fs` 中定义的 `link_file` ，以在 `ROOT_INODE` 中进行 `link` 的操作。 `link` 操作类似于 `Inode` 中的其他操作，运用 `modify_disk_inode` 等函数来对 `DiskInode` 进行访问。首先使用 `old_name` 来查找对应的 `inode_id` ，然后在目录后新增一个目录项 `new_name` 指向 `inode_id` 的部分。
 
-`sys_unlinkat` 类似于 `sys_linkat` ，遍历每一对记录，若记录的名称为 `name` ，则修改该块。
+`sys_unlinkat` 类似于 `sys_linkat` ，遍历每一对记录，若记录的名称为 `name` ，则修改该目录项。
 
 ## 问答题
 

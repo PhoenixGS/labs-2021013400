@@ -194,7 +194,7 @@ impl Inode {
     /// Link
     pub fn link(&self, old_name: &str, new_name: &str) -> bool {
         let mut fs = self.fs.lock();
-        let op = |disk_inode: &DiskInode| {
+        let op = |disk_inode: &DiskInode| { // find the inode id of old_name
             assert!(disk_inode.is_dir());
             self.find_inode_id(old_name, disk_inode)
         };
@@ -203,7 +203,7 @@ impl Inode {
             return false;
         }
         let inode_id = inode_id.unwrap();
-        let op = |disk_inode: &mut DiskInode| {
+        let op = |disk_inode: &mut DiskInode| { // append the new direntry
             let file_count = (disk_inode.size as usize) / DIRENT_SZ;
             let new_size = (file_count + 1) * DIRENT_SZ;
             self.increase_size(new_size as u32, disk_inode, &mut fs);
@@ -219,17 +219,7 @@ impl Inode {
     }
     /// Unlink
     pub fn unlink(&self, name: &str) -> bool {
-        // let mut fs = self.fs.lock();
-        // let op = |disk_inode: &DiskInode| {
-        //     assert!(disk_inode.is_dir());
-        //     self.find_inode_id(name, disk_inode) 
-        // };
-        // let inode_id = self.read_disk_inode(op);
-        // if inode_id.is_none() {
-        //     return false;
-        // }
-        // let inode_id = inode_id.unwrap();
-        let op = |disk_inode: &mut DiskInode| {
+        let op = |disk_inode: &mut DiskInode| { // modify the direntry which has the same name
             let mut dirent = DirEntry::empty();
             let file_count = (disk_inode.size as usize) / DIRENT_SZ;
             for i in 0..file_count {
@@ -251,7 +241,7 @@ impl Inode {
     pub fn get_nlink(&self, block_id: usize, block_offset: usize) -> u32 {
         let fs = self.fs.lock();
         let inode_id = fs.get_inode_id(block_id as u32, block_offset);
-        let op = |disk_inode: &DiskInode| {
+        let op = |disk_inode: &DiskInode| { // scan all direntries to count the number of links
             let mut dirent = DirEntry::empty();
             let file_count = (disk_inode.size as usize) / DIRENT_SZ;
             let mut nlink = 0;

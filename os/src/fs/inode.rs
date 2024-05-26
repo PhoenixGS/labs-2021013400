@@ -165,7 +165,7 @@ impl File for OSInode {
         }
         total_write_size
     }
-    fn stat(&self) -> super::Stat {
+    fn stat(&self) -> super::Stat { // get the inode information
         let inner = self.inner.exclusive_access();
         let inode = inner.inode.clone();
         super::Stat {
