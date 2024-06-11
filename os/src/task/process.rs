@@ -45,10 +45,24 @@ pub struct ProcessControlBlockInner {
     pub task_res_allocator: RecycleAllocator,
     /// mutex list
     pub mutex_list: Vec<Option<Arc<dyn Mutex>>>,
+    /// mutex work
+    pub mutex_work: Vec<usize>,
+    /// mutex allocated
+    pub mutex_allocated: Vec<Vec<usize>>,
+    /// mutex need
+    pub mutex_need: Vec<Vec<usize>>,
     /// semaphore list
     pub semaphore_list: Vec<Option<Arc<Semaphore>>>,
+    /// semaphore work
+    pub semaphore_work: Vec<usize>,
+    /// semaphore allocated
+    pub semaphore_allocated: Vec<Vec<usize>>,
+    /// semaphore need
+    pub semaphore_need: Vec<Vec<usize>>,
     /// condvar list
     pub condvar_list: Vec<Option<Arc<Condvar>>>,
+    /// deadlock detect enabled
+    pub deadlock_detect: bool,
 }
 
 impl ProcessControlBlockInner {
@@ -81,6 +95,109 @@ impl ProcessControlBlockInner {
     /// get a task with tid in this process
     pub fn get_task(&self, tid: usize) -> Arc<TaskControlBlock> {
         self.tasks[tid].as_ref().unwrap().clone()
+    }
+    /// check deadlock of mutexes
+    pub fn mutex_deadlock(&self) -> bool {
+    	let mut finish = vec![false; self.tasks.len()];
+        let mut unfinished = self.tasks.len();
+        let mut work = self.mutex_work.clone();
+
+        // for i in 0..self.mutex_list.len() {
+        //     if let Some(mutex) = self.mutex_list[i].as_ref() {
+        //         work.push(1 - mutex.get_lock() as usize);
+        //     }
+        // }
+
+        while unfinished > 0 {
+            let mut next = -1;
+            for i in 0..self.tasks.len() {
+                if ! finish[i] {
+                    let mut flag = true;
+                    for j in 0..self.mutex_list.len() {
+                        if self.mutex_need[i][j] > work[j] {
+                            flag = false;
+                            break;
+                        }
+                    }
+                    if flag {
+                        next = i as isize;
+                        break;
+                    }
+                }
+            }
+            if next == -1 {
+                return true;
+            }
+            for j in 0..self.mutex_list.len() {
+                work[j] += self.mutex_allocated[next as usize][j];
+            }
+            finish[next as usize] = true;
+            unfinished -= 1;
+        }
+        false
+    }
+
+    /// check deadlock of semaphore
+    pub fn semaphore_deadlock(&self) -> bool {
+    	let mut finish = vec![false; self.tasks.len()];
+        let mut unfinished = self.tasks.len();
+        let mut work = self.semaphore_work.clone();
+
+        // for i in 0..self.semaphore_list.len() {
+        //     if let Some(semaphore) = self.semaphore_list[i].as_ref() {
+        //         work.push(semaphore.get_available() as usize);
+        //     }
+        // }
+
+        // println!("work:");
+        // for i in 0..work.len() {
+        //     print!("{} ", work[i]);
+        // }
+        // println!("");
+        // println!("allocated");
+        // for i in 0..self.semaphore_allocated.len() {
+        //     for j in 0..self.semaphore_allocated[i].len() {
+        //         print!("{} ", self.semaphore_allocated[i][j]);
+        //     }
+        //     println!("");
+        // }
+        // println!("need");
+        // for i in 0..self.semaphore_need.len() {
+        //     for j in 0..self.semaphore_need[i].len() {
+        //         print!("{} ", self.semaphore_need[i][j]);
+        //     }
+        //     println!("");
+        // }
+
+        while unfinished > 0 {
+            let mut next = -1;
+            for i in 0..self.tasks.len() {
+                if ! finish[i] {
+                    let mut flag = true;
+                    for j in 0..self.semaphore_list.len() {
+                        if self.semaphore_need[i][j] > work[j] {
+                            flag = false;
+                            break;
+                        }
+                    }
+                    if flag {
+                        next = i as isize;
+                        break;
+                    }
+                }
+            }
+            if next == -1 {
+                // println!("true");
+                return true;
+            }
+            for j in 0..self.semaphore_list.len() {
+                work[j] += self.semaphore_allocated[next as usize][j];
+            }
+            finish[next as usize] = true;
+            unfinished -= 1;
+        }
+        // println!("false");
+        false
     }
 }
 
@@ -117,8 +234,15 @@ impl ProcessControlBlock {
                     tasks: Vec::new(),
                     task_res_allocator: RecycleAllocator::new(),
                     mutex_list: Vec::new(),
+                    mutex_work: Vec::new(),
+                    mutex_allocated: vec![Vec::new()],
+                    mutex_need: vec![Vec::new()],
                     semaphore_list: Vec::new(),
+                    semaphore_work: Vec::new(),
+                    semaphore_allocated: vec![Vec::new()],
+                    semaphore_need: vec![Vec::new()],
                     condvar_list: Vec::new(),
+                    deadlock_detect: false,
                 })
             },
         });
@@ -144,6 +268,12 @@ impl ProcessControlBlock {
         // add main thread to the process
         let mut process_inner = process.inner_exclusive_access();
         process_inner.tasks.push(Some(Arc::clone(&task)));
+        let mutex_cnt = process_inner.mutex_list.len();
+        process_inner.mutex_need.push(vec![0; mutex_cnt]);
+        process_inner.mutex_allocated.push(vec![0; mutex_cnt]);
+        let semaphore_cnt = process_inner.semaphore_list.len();
+        process_inner.semaphore_need.push(vec![0; semaphore_cnt]);
+        process_inner.semaphore_allocated.push(vec![0; semaphore_cnt]);
         drop(process_inner);
         insert_into_pid2process(process.getpid(), Arc::clone(&process));
         // add main thread to scheduler
@@ -243,8 +373,15 @@ impl ProcessControlBlock {
                     tasks: Vec::new(),
                     task_res_allocator: RecycleAllocator::new(),
                     mutex_list: Vec::new(),
+                    mutex_work: Vec::new(),
+                    mutex_allocated: vec![Vec::new()],
+                    mutex_need: vec![Vec::new()],
                     semaphore_list: Vec::new(),
+                    semaphore_work: Vec::new(),
+                    semaphore_allocated: vec![Vec::new()],
+                    semaphore_need: vec![Vec::new()],
                     condvar_list: Vec::new(),
+                    deadlock_detect: false,
                 })
             },
         });
