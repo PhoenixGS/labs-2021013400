@@ -98,6 +98,9 @@ impl ProcessControlBlockInner {
     }
     /// check deadlock of mutexes
     pub fn mutex_deadlock(&self) -> bool {
+        if ! self.deadlock_detect {
+            return false;
+        }
     	let mut finish = vec![false; self.tasks.len()];
         let mut unfinished = self.tasks.len();
         let mut work = self.mutex_work.clone();
@@ -139,6 +142,9 @@ impl ProcessControlBlockInner {
 
     /// check deadlock of semaphore
     pub fn semaphore_deadlock(&self) -> bool {
+        if ! self.deadlock_detect {
+            return false;
+        }
     	let mut finish = vec![false; self.tasks.len()];
         let mut unfinished = self.tasks.len();
         let mut work = self.semaphore_work.clone();
