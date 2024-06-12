@@ -15,10 +15,6 @@ pub struct TaskControlBlock {
     pub kstack: KernelStack,
     /// mutable
     inner: UPSafeCell<TaskControlBlockInner>,
-    // pub mutex_need: Vec<usize>,
-    // pub mutex_allocated: Vec<usize>,
-    // pub semaphore_need: Vec<usize>,
-    // pub semaphore_allocated: Vec<usize>,
 }
 
 impl TaskControlBlock {
@@ -32,22 +28,6 @@ impl TaskControlBlock {
         let inner = process.inner_exclusive_access();
         inner.memory_set.token()
     }
-    // /// push a mutex to the need list
-    // pub fn push_mutex_need(&mut self, mutex_id: usize) {
-    //     self.mutex_need.push(mutex_id);
-    // }
-    // /// pop a mutex from the need list
-    // pub fn pop_mutex_need(&mut self) -> Option<usize> {
-    //     self.mutex_need.pop()
-    // }
-    // /// push a mutex to the allocated list
-    // pub fn push_mutex_allocated(&mut self, mutex_id: usize) {
-    //     self.mutex_allocated.push(mutex_id);
-    // }
-    // /// pop a mutex from the allocated list
-    // pub fn pop_mutex_allocated(&mut self) -> Option<usize> {
-    //     self.mutex_allocated.pop()
-    // }
 }
 
 pub struct TaskControlBlockInner {

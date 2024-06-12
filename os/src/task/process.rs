@@ -105,12 +105,6 @@ impl ProcessControlBlockInner {
         let mut unfinished = self.tasks.len();
         let mut work = self.mutex_work.clone();
 
-        // for i in 0..self.mutex_list.len() {
-        //     if let Some(mutex) = self.mutex_list[i].as_ref() {
-        //         work.push(1 - mutex.get_lock() as usize);
-        //     }
-        // }
-
         while unfinished > 0 {
             let mut next = -1;
             for i in 0..self.tasks.len() {
@@ -149,32 +143,6 @@ impl ProcessControlBlockInner {
         let mut unfinished = self.tasks.len();
         let mut work = self.semaphore_work.clone();
 
-        // for i in 0..self.semaphore_list.len() {
-        //     if let Some(semaphore) = self.semaphore_list[i].as_ref() {
-        //         work.push(semaphore.get_available() as usize);
-        //     }
-        // }
-
-        // println!("work:");
-        // for i in 0..work.len() {
-        //     print!("{} ", work[i]);
-        // }
-        // println!("");
-        // println!("allocated");
-        // for i in 0..self.semaphore_allocated.len() {
-        //     for j in 0..self.semaphore_allocated[i].len() {
-        //         print!("{} ", self.semaphore_allocated[i][j]);
-        //     }
-        //     println!("");
-        // }
-        // println!("need");
-        // for i in 0..self.semaphore_need.len() {
-        //     for j in 0..self.semaphore_need[i].len() {
-        //         print!("{} ", self.semaphore_need[i][j]);
-        //     }
-        //     println!("");
-        // }
-
         while unfinished > 0 {
             let mut next = -1;
             for i in 0..self.tasks.len() {
@@ -193,7 +161,6 @@ impl ProcessControlBlockInner {
                 }
             }
             if next == -1 {
-                // println!("true");
                 return true;
             }
             for j in 0..self.semaphore_list.len() {
@@ -202,7 +169,6 @@ impl ProcessControlBlockInner {
             finish[next as usize] = true;
             unfinished -= 1;
         }
-        // println!("false");
         false
     }
 }
